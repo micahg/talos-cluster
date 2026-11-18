@@ -86,3 +86,19 @@ spec:
         - ports:
             - port: "3000"
               protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": cobblepod-dev
+            app: cobblepod-ui
+      toPorts:
+        - ports:
+            - port: "3000"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": cobblepod-dev
+            app: cobblepod-server
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP

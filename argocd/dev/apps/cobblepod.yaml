@@ -1,0 +1,26 @@
+# The chart and its image pins live in the cobblepod repo (chart/values-talos-dev.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cobblepod
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/micahg/cobblepod.git
+    targetRevision: main
+    path: chart
+    helm:
+      releaseName: cobblepod
+      valueFiles:
+        - values.yaml
+        - values-talos-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cobblepod-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
