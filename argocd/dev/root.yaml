@@ -1,4 +1,4 @@
-# App of apps: Argo CD watches talos/argocd/dev/apps and creates one Application per file.
+# App of apps: Argo CD watches argocd/dev/apps and creates one Application per file.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,9 +7,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/micahg/tbltp.git
+    repoURL: https://github.com/micahg/talos-cluster.git
     targetRevision: main
-    path: talos/argocd/dev/apps
+    path: argocd/dev/apps
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

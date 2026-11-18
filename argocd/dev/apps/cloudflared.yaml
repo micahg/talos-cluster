@@ -8,9 +8,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/micahg/tbltp.git
+    repoURL: https://github.com/micahg/talos-cluster.git
     targetRevision: main
-    path: talos/apps/cloudflared/dev
+    path: apps/cloudflared/dev
   destination:
     server: https://kubernetes.default.svc
     namespace: cloudflared
