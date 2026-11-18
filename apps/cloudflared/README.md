@@ -15,3 +15,10 @@ Public hostnames (set in the Cloudflare Zero Trust dashboard, not in Git):
 | --- | --- |
 | dev.tbltp.dev | `http://ntt-ui-service.ntt.svc.cluster.local:80` |
 | dev-api.tbltp.dev | `http://ntt-api-service.ntt.svc.cluster.local:80` |
+
+cobblepod (hostname to be set; one hostname, two path routes, `/api*` first):
+
+| Path | Service |
+| --- | --- |
+| `/api*` | `http://cobblepod-server.cobblepod-dev.svc.cluster.local:80` |
+| everything else | `http://cobblepod-ui.cobblepod-dev.svc.cluster.local:80` |
