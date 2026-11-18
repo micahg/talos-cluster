@@ -11,7 +11,7 @@ The chart expects one Secret (see `chart/values-talos-dev.yaml` in the cobblepod
 
 Create it (the plaintext never touches Git or disk; paste the value at the prompt):
 
-    read -rs -p 'Auth0 M2M client secret: ' S; echo
+    printf 'Auth0 M2M client secret: '; read -rs S; echo
     kubectl -n cobblepod-dev create secret generic cobblepod-secrets \
       --from-literal=auth0-client-secret="$S" --dry-run=client -o yaml \
     | kubeseal --controller-namespace kube-system --controller-name sealed-secrets-controller \
