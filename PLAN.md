@@ -1,6 +1,12 @@
 # Talos Migration Plan — Agent Handoff
 
-Last updated 2026-11-15. Dev on Talos is built and working. Prod, the cutover and cleanup remain.
+Last updated 2026-11-17. Dev on Talos is built and working. Prod, the cutover and cleanup remain.
+
+**Repo split (2026-11-17):** this repo (`micahg/talos-cluster`, public) holds all cluster config for every
+environment. It was `talos/` in `micahg/tbltp`, so paths in older notes below lose the `talos/` prefix.
+The `ntt` Argo app still deploys `chart/` from `tbltp`; image pins stay in
+`tbltp/chart/values-talos-dev.yaml` and the release workflow bumps them there. Cobblepod is planned to
+run on the dev cluster from this repo. `main` here needs a PR (no direct pushes); Actions are off.
 
 ## Context
 
@@ -118,16 +124,15 @@ and `kubeconfig` (`secrets.yaml` is in 1Password).
 
 1. Rotate the Atlas dev password (it was exposed in a terminal and in chat); reseal
    `mongo-connection-string` and push.
-2. Merge `feat/talos` to `main`, then in a follow-up commit switch every Git-sourced Argo
-   `targetRevision` (4 children and `root.yaml`) to `main`, re-apply `root.yaml` by hand, and
-   only then delete `feat/talos`.
+2. Delete the `feat/talos` branch in `tbltp` (everything is on `main`; needs the owner's go-ahead).
 3. Retire old dev: drop the stray `tbltp-dev` database in the old microk8s Mongo, remove "Dev"
    from the deploy matrix in `.github/workflows/deploy.yaml`, stop microk8s and
    `ntt.steakholdermeating.com`. Then do the file rename above.
 4. Build the CI step that bumps image versions in `values-talos-<env>.yaml`.
 5. Write `talos/cluster/create.sh <dev|prod>`: one-shot create VM (in the `images` pool),
    generate config, bootstrap, install Argo, apply `root.yaml`, restore the Sealed Secrets key.
-6. Fix the two OutOfSync CiliumNetworkPolicies in the `ntt` app (likely `ignoreDifferences`).
+6. Onboard cobblepod to the dev cluster (Argo app, namespace, sealed secrets, tunnel route, widen
+   cloudflared egress and ingressNamespace, check VM RAM).
 7. Dev telemetry (OTel/Loki egress and secrets) is deferred; exporter errors are noisy.
 8. UI bug: a failed Auth0 login redirects to `/authorize` in a loop.
 9. **Prod**: second VM (`10.7.0.0/24`), its own sealed secrets and Argo dir, its own tunnel and
