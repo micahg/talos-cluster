@@ -122,8 +122,7 @@ and `kubeconfig` (`secrets.yaml` is in 1Password).
 
 ## Remaining work (rough order)
 
-1. Rotate the Atlas dev password (it was exposed in a terminal and in chat); reseal
-   `mongo-connection-string` and push.
+1. (Dropped by the owner: rotating the Atlas dev password. Rotate if it is ever thought leaked.)
 2. Delete the `feat/talos` branch in `tbltp` (everything is on `main`; needs the owner's go-ahead).
 3. Retire old dev: drop the stray `tbltp-dev` database in the old microk8s Mongo, remove "Dev"
    from the deploy matrix in `.github/workflows/deploy.yaml`, stop microk8s and
