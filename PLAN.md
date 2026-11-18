@@ -1,6 +1,6 @@
 # Talos Migration Plan — Agent Handoff
 
-Last updated 2026-11-17. Dev on Talos is built and working. Prod, the cutover and cleanup remain.
+Last updated 2026-11-18. Dev on Talos is built and working for tbltp and cobblepod. Prod and cleanup remain.
 
 **Repo split (2026-11-17):** this repo (`micahg/talos-cluster`, public) holds all cluster config for every
 environment. It was `talos/` in `micahg/tbltp`, so paths in older notes below lose the `talos/` prefix.
@@ -120,23 +120,54 @@ and `kubeconfig` (`secrets.yaml` is in 1Password).
 - kubectl from the laptop: `ssh -fN -D 1080 micah@192.168.1.2`, then
   `KUBECONFIG=~/.kube/talos-dev.config` (has `proxy-url`).
 
+## Dev state (2026-11-18)
+
+- tbltp: `dev.tbltp.dev` / `dev-api.tbltp.dev`. cobblepod: `cobblepod.steakholdermeating.com`
+  (stateless; Valkey is an emptyDir). All Argo apps Synced and Healthy. Releases bump
+  `chart/values-talos-dev.yaml` in `tbltp` through a self-merging PR (cobblepod's release
+  workflow still uses the old KUBECONFIG helm deploy: replace it).
+- Cloudflare tunnel routes live only in the dashboard. Current routes on the dev tunnel:
+  `dev.tbltp.dev` -> `ntt-ui-service.ntt:80`, `dev-api.tbltp.dev` -> `ntt-api-service.ntt:80`,
+  `cobblepod.steakholdermeating.com` `/api*` -> `cobblepod-server.cobblepod-dev:80` then
+  everything else -> `cobblepod-ui.cobblepod-dev:80`.
+- cobblepod network policy lessons (Cilium): `toFQDNs` only works if DNS goes through the proxy
+  (`toEndpoints` kube-dns with `rules.dns`); `*.x` matches one label, `**.x` many (use
+  `**.cluster.local`); the server also needs `*.googleapis.com`; the worker has 80/443 to the
+  internet except private ranges. Worker CPU limits: cobblepod issue #69.
+- microk8s is stopped (not uninstalled). Keep it a couple of weeks, then see the cleanup list.
+
+## Prod readiness
+
+`cluster/create.sh <dev|prod>` (run on mastermold; `DRY_RUN=1` prints the plan) builds the
+network, VM and Talos cluster from `cluster/envs/<env>.env`. Prod defaults: network `prod`
+10.7.0.0/24, node `prod-cp1` 10.7.0.10, 2 vCPU, 4 GiB, 20 GiB disk. mastermold needs `helm`
+installed (user-level is fine) to render Cilium. Not yet run for prod.
+
+Still to build or decide before running it:
+1. Prod promotion model: what the prod Argo apps track (a Git tag, e.g. `prod`) and where prod
+   image pins live (`chart/values-talos-prod.yaml` in `tbltp`, bumped after approval).
+2. `argocd/prod/{root.yaml,apps/}`, `apps/*/prod/` secrets and cloudflared, `values-talos-prod.yaml`.
+3. Prod hostnames and tunnel; Auth0 callback/logout URLs and API audience for them.
+4. Atlas prod database and user (check the connection string includes a database name),
+   R2 bucket and credentials, Mongo backup and etcd snapshot plan.
+5. Run beside DOKS, cut over by moving the prod hostname to the new tunnel, then cancel DOKS.
+6. Deploy workflow: prod job stops using helm/KUBECONFIG and bumps the prod values after approval.
+
 ## Remaining work (rough order)
 
-1. (Dropped by the owner: rotating the Atlas dev password. Rotate if it is ever thought leaked.)
-2. Delete the `feat/talos` branch in `tbltp` (everything is on `main`; needs the owner's go-ahead).
-3. Retire old dev: drop the stray `tbltp-dev` database in the old microk8s Mongo, remove "Dev"
-   from the deploy matrix in `.github/workflows/deploy.yaml`, stop microk8s and
-   `ntt.steakholdermeating.com`. Then do the file rename above.
-4. Build the CI step that bumps image versions in `values-talos-<env>.yaml`.
-5. Write `talos/cluster/create.sh <dev|prod>`: one-shot create VM (in the `images` pool),
-   generate config, bootstrap, install Argo, apply `root.yaml`, restore the Sealed Secrets key.
-6. Onboard cobblepod to the dev cluster (Argo app, namespace, sealed secrets, tunnel route, widen
-   cloudflared egress and ingressNamespace, check VM RAM).
-7. Dev telemetry (OTel/Loki egress and secrets) is deferred; exporter errors are noisy.
-8. UI bug: a failed Auth0 login redirects to `/authorize` in a loop.
-9. **Prod**: second VM (`10.7.0.0/24`), its own sealed secrets and Argo dir, its own tunnel and
-   Auth0 settings, Atlas database check, off-box etcd snapshots and Mongo backups, run beside
-   DOKS, cut over the prod hostname via its tunnel, then cancel DOKS.
+1. Replace cobblepod's release workflow with a bump PR to its `values-talos-dev.yaml`.
+2. Retire old dev: uninstall microk8s later (`sudo snap remove microk8s`), drop the stray
+   `tbltp-dev` database in its Mongo (take a last `mongodump` first), delete the
+   `ntt`/`nttapi.steakholdermeating.com` DNS records, remove the "Dev" environment secrets in both
+   repos.
+3. tbltp cleanup: delete `chart/values-dev.yaml` and the old dev job, rename
+   `values-talos-dev.yaml` to `values-dev.yaml` (update `ntt.yaml` valueFiles, `deploy-dev.yaml`,
+   the secrets README in one commit), and delete the `feat/talos` branch (needs the owner's go-ahead).
+4. Prod (see Prod readiness).
+5. Dev telemetry (OTel/Loki egress and secrets) is deferred; exporter errors are noisy.
+6. UI bug: a failed Auth0 login redirects to `/authorize` in a loop.
+7. Back up the Sealed Secrets key again after rotation (about every 30 days) or disable rotation
+   (`--key-renew-period=0`).
 
 ## Gotchas
 
