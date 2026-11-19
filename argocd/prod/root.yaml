@@ -1,0 +1,19 @@
+# App of apps: Argo CD watches argocd/prod/apps and creates one Application per file.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/micahg/talos-cluster.git
+    targetRevision: prod
+    path: argocd/prod/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
