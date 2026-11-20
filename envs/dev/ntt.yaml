@@ -1,25 +1,6 @@
-# tbltp (ntt) values for the dev cluster. Image pins are bumped by tbltp's Deploy Dev workflow.
-# Moved here from tbltp/chart/values-talos-dev.yaml; Argo reads it as $values/envs/dev/ntt.yaml.
-deployEnv: dev
+# Version pins for tbltp (ntt) on the dev cluster. Bumped by tbltp's "Deploy Dev" workflow through
+# a self-merging pull request here. Everything else lives in tbltp/chart/values-dev.yaml.
+# Argo reads this file as $values/envs/dev/ntt.yaml (see argocd/dev/apps/ntt.yaml).
 releaseVersion: "0.63.0"
 apiImageVers: "0.44.0"
 uiImageVers: "0.33.0"
-
-uiDomain: "dev.tbltp.dev"
-apiDomain: "dev-api.tbltp.dev"
-issuerDomain: "nttdev.us.auth0.com"
-clientId: blFghGfwUHOlKwDZzOELBFmxOTkxCeQr
-
-# Traffic arrives via cloudflared, not nginx. The Cilium policies admit it by namespace.
-ingressEnabled: false
-ingressNamespace: cloudflared
-
-# Secrets (mongo-connection-string, ntt-api-s3-storage) come from SealedSecrets,
-# applied by the ntt-secrets Argo CD app. MONGO_URL points at Atlas.
-createNamespace: false
-createSecrets: false
-mongoExternal: true
-
-# Cloudflare R2 (bucket host is two labels deep, hence **). Keeps the account id out of Git.
-storageS3EgressPatterns:
-  - "**.r2.cloudflarestorage.com"

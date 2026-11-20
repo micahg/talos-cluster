@@ -1,5 +1,6 @@
-# The chart lives in the tbltp repo. Environment values and image pins live in this repo
-# (envs/dev/ntt.yaml); tbltp's CI bumps them through a pull request here.
+# The chart and its settings live in the tbltp repo (chart/values.yaml, chart/values-dev.yaml).
+# Only the version pins live in this repo (envs/dev/ntt.yaml); tbltp's CI bumps them through a
+# pull request here.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -17,6 +18,7 @@ spec:
         releaseName: ntt-infra
         valueFiles:
           - values.yaml
+          - values-dev.yaml
           - $values/envs/dev/ntt.yaml
     - repoURL: https://github.com/micahg/talos-cluster.git
       targetRevision: main

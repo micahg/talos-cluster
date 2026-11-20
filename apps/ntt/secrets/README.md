@@ -7,7 +7,7 @@ cluster reads only its own directory.
 Put the encrypted `SealedSecret` manifests here. Argo CD applies them (app `ntt-secrets`)
 and the Sealed Secrets controller decrypts them into plain Secrets in the `ntt` namespace.
 
-The chart expects exactly these Secrets (see `chart/values-talos-dev.yaml`):
+The chart expects exactly these Secrets (see `chart/values-dev.yaml`):
 
 | Secret | Keys |
 | --- | --- |
