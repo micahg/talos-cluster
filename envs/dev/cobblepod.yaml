@@ -1,0 +1,12 @@
+# Image tags for cobblepod on the dev cluster. Bumped by cobblepod's release workflow through a
+# self-merging pull request here. Everything else lives in cobblepod/chart/values-dev.yaml.
+# Argo reads this file as $values/envs/dev/cobblepod.yaml (see argocd/dev/apps/cobblepod.yaml).
+ui:
+  image:
+    tag: "0.2.0"
+server:
+  image:
+    tag: "0.2.0"
+worker:
+  image:
+    tag: "0.2.0"
