@@ -1,0 +1,6 @@
+# Version pins for tbltp (ntt) on the dev cluster. Bumped by tbltp's "Deploy Dev" workflow through
+# a self-merging pull request here. Everything else lives in tbltp/chart/values-dev.yaml.
+# Argo reads this file as $values/envs/dev/ntt.yaml (see argocd/dev/apps/ntt.yaml).
+releaseVersion: "0.63.0"
+apiImageVers: "0.44.0"
+uiImageVers: "0.33.0"

@@ -1,3 +1,6 @@
+# The chart and its settings live in the tbltp repo (chart/values.yaml, chart/values-dev.yaml).
+# Only the version pins live in this repo (envs/dev/ntt.yaml); tbltp's CI bumps them through a
+# pull request here.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -7,15 +10,19 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
-  source:
-    repoURL: https://github.com/micahg/tbltp.git
-    targetRevision: main
-    path: chart
-    helm:
-      releaseName: ntt-infra
-      valueFiles:
-        - values.yaml
-        - values-talos-dev.yaml
+  sources:
+    - repoURL: https://github.com/micahg/tbltp.git
+      targetRevision: main
+      path: chart
+      helm:
+        releaseName: ntt-infra
+        valueFiles:
+          - values.yaml
+          - values-dev.yaml
+          - $values/envs/dev/ntt.yaml
+    - repoURL: https://github.com/micahg/talos-cluster.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: ntt
