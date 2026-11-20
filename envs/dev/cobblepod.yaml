@@ -3,10 +3,10 @@
 # Argo reads this file as $values/envs/dev/cobblepod.yaml (see argocd/dev/apps/cobblepod.yaml).
 ui:
   image:
-    tag: "0.1.0"
+    tag: "0.2.0"
 server:
   image:
-    tag: "0.1.0"
+    tag: "0.2.0"
 worker:
   image:
-    tag: "0.1.0"
+    tag: "0.2.0"
