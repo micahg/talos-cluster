@@ -31,8 +31,10 @@ spec:
       ref: values
 ```
 
-`envs/<env>/ntt.yaml` is today's `chart/values-talos-<env>.yaml` (all Talos-specific, nothing is
-shared with `values.yaml`). Same for cobblepod (`envs/dev/cobblepod.yaml`).
+Settings stay in the app repo: with microk8s gone, `chart/values-dev.yaml` is simply the Talos dev
+values (later `values-prod.yaml`). `envs/<env>/ntt.yaml` here holds **only** `releaseVersion`,
+`apiImageVers` and `uiImageVers`. Same split for cobblepod (`envs/dev/cobblepod.yaml` holds its
+image tags only).
 
 ### What CI changes
 
@@ -93,6 +95,8 @@ CI needs write access to this repo only (contents + pull requests). It never get
 ## Open items
 - Open PRs affected: talos-cluster #3 (create.sh, plan) is unaffected; #4 is reworked in step 9;
   tbltp #551 is closed in step 9.
+- Order matters for dev: tbltp#553 (values-dev.yaml becomes the Talos values) first; then
+  talos-cluster#6 + tbltp#552 together; then delete `chart/values-talos-dev.yaml`.
 - Argo CD v3.6.1 multi-source with `ref` is assumed to work as documented; step 2 is the test.
 - Prod needs: Atlas prod database and user (URI must name the database), R2 bucket and
   credentials, Auth0 URLs for the test and final hostnames, a prod tunnel.
