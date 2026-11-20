@@ -3,7 +3,7 @@
 One directory per environment (`dev/`). Files only decrypt on their own cluster. The
 `cobblepod-secrets` Argo app applies them into the `cobblepod-dev` namespace.
 
-The chart expects one Secret (see `chart/values-talos-dev.yaml` in the cobblepod repo):
+The chart expects one Secret (see `chart/values-dev.yaml` in the cobblepod repo):
 
 | Secret | Key |
 | --- | --- |
