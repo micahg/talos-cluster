@@ -1,4 +1,4 @@
-# Chart and settings come from tbltp (chart/values.yaml, chart/values-prod.yaml); only the version pins
+# Chart and settings come from tbltp (chart/values.yaml, whose defaults are prod); only the version pins
 # live here (envs/prod/ntt.yaml).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -17,7 +17,6 @@ spec:
         releaseName: ntt-infra
         valueFiles:
           - values.yaml
-          - values-prod.yaml
           - $values/envs/prod/ntt.yaml
     - repoURL: https://github.com/micahg/talos-cluster.git
       targetRevision: main
