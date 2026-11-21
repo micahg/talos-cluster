@@ -24,3 +24,10 @@ Create one (the plaintext never touches Git or disk):
 Sealed secrets are encrypted to one cluster's key: rebuilding the cluster means resealing,
 unless you back up the controller's key (kube-system secret labelled
 `sealedsecrets.bitnami.com/sealed-secrets-key`).
+
+## Prod
+
+`prod/` holds the namespace now. Seal the same two secrets against the prod cluster
+(`export KUBECONFIG=~/.kube/talos-prod.config`, then the recipe above with the output going to
+`prod/`). The prod `mongo.url` must name the database (`.../tbltp?...`), otherwise the API
+uses `test`. Use an Atlas user limited to the prod database, and a prod R2 bucket and token.

@@ -1,0 +1,7 @@
+# Version pins for tbltp (ntt) on the prod cluster. Bumped through a pull request here once a
+# release is approved for prod. Everything else lives in tbltp/chart/values-prod.yaml.
+# Argo reads this file as $values/envs/prod/ntt.yaml (see argocd/prod/apps/ntt.yaml).
+# Starting point: what dev runs now. The first approved release moves it.
+releaseVersion: "0.63.0"
+apiImageVers: "0.44.0"
+uiImageVers: "0.33.0"

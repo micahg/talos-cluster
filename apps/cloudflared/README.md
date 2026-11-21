@@ -22,3 +22,17 @@ cobblepod (hostname to be set; one hostname, two path routes, `/api*` first):
 | --- | --- |
 | `/api*` | `http://cobblepod-server.cobblepod-dev.svc.cluster.local:80` |
 | everything else | `http://cobblepod-ui.cobblepod-dev.svc.cluster.local:80` |
+
+## Prod
+
+`apps/cloudflared/prod/` is the same Deployment and policy (no cobblepod). Create a separate
+tunnel for prod in Zero Trust and seal its token into `apps/cloudflared/prod/tunnel-token.yaml`
+with the recipe above, using the prod kubeconfig. Routes while DOKS still serves prod:
+
+| Hostname | Service |
+| --- | --- |
+| prod.tbltp.dev | `http://ntt-ui-service.ntt.svc.cluster.local:80` |
+| prod-api.tbltp.dev | `http://ntt-api-service.ntt.svc.cluster.local:80` |
+
+At cutover the hostnames become `tbltp.dev` and `api.tbltp.dev` (delete the old DNS records first),
+and `uiDomain`/`apiDomain` in tbltp `chart/values-prod.yaml` change with them.
