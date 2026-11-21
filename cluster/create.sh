@@ -35,7 +35,9 @@ done
 POOL_DIR=$("${V[@]}" pool-dumpxml images | sed -n 's#.*<path>\(.*\)</path>.*#\1#p' | head -1)
 DISK="$POOL_DIR/$NODE_NAME.qcow2"
 if "${V[@]}" dominfo "$NODE_NAME" >/dev/null 2>&1; then echo "domain $NODE_NAME already exists" >&2; exit 1; fi
-if [ -e "$DISK" ]; then echo "$DISK already exists" >&2; exit 1; fi
+if "${V[@]}" vol-info --pool images "$NODE_NAME.qcow2" >/dev/null 2>&1; then
+  echo "volume $NODE_NAME.qcow2 already exists in pool images" >&2; exit 1
+fi
 if [ -e "$WORK/$ENV/secrets.yaml" ] && [ -z "${REUSE_SECRETS:-}" ]; then
   echo "$WORK/$ENV/secrets.yaml exists: a cluster was built here before." >&2
   echo "Set REUSE_SECRETS=1 to rebuild the same cluster identity from it, or move it away." >&2
@@ -74,7 +76,7 @@ say "Image (Talos $TALOS_VERSION from Image Factory)"
 run mkdir -p "$WORK/images" "$WORK/$ENV"
 run chmod 700 "$WORK" "$WORK/$ENV"
 if [ -n "$DRY_RUN" ]; then
-  echo "+ POST schematic.yaml to factory.talos.dev, download metal-amd64.raw.zst, convert to $DISK (${DISK_GB}G)"
+  echo "+ POST schematic.yaml to factory.talos.dev, download metal-amd64.raw.zst, convert to a ${DISK_GB}G qcow2 and upload it as volume $NODE_NAME.qcow2 in pool images"
 else
   SCHEMATIC=$(curl -sf -X POST --data-binary @schematic.yaml https://factory.talos.dev/schematics | jq -r .id)
   echo "$SCHEMATIC" > "$WORK/schematic-id.txt"
@@ -82,8 +84,14 @@ else
   if [ ! -f "$RAW" ]; then
     curl -sfL "https://factory.talos.dev/image/$SCHEMATIC/$TALOS_VERSION/metal-amd64.raw.zst" | zstd -d -o "$RAW"
   fi
-  qemu-img convert -O qcow2 "$RAW" "$DISK"
-  qemu-img resize "$DISK" "${DISK_GB}G"
+  # The pool directory is root-owned, so build the disk next to the cached image and let libvirt
+  # (which can write there) create and fill the volume. No sudo needed.
+  TMPDISK="$WORK/images/$NODE_NAME.qcow2"
+  qemu-img convert -O qcow2 "$RAW" "$TMPDISK"
+  qemu-img resize "$TMPDISK" "${DISK_GB}G"
+  "${V[@]}" vol-create-as images "$NODE_NAME.qcow2" "${DISK_GB}G" --format qcow2
+  "${V[@]}" vol-upload --pool images "$NODE_NAME.qcow2" "$TMPDISK"
+  rm -f "$TMPDISK"
 fi
 
 say "VM $NODE_NAME ($VCPUS vCPU, $MEM_MB MiB)"
