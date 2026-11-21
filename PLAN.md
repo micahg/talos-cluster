@@ -95,8 +95,8 @@ Migrated the tbltp app's hosting to Talos Linux on KVM VMs, one cluster per envi
    - prod: `tbltp.dev` -> ui service, `api.tbltp.dev` -> api service (same URLs as dev), plus the
      test hostnames `prod.tbltp.dev` and `prod-api.tbltp.dev` until cleanup.
 8. **Database = MongoDB Atlas**, shared cluster (`*.lrmrxki.mongodb.net`). The connection string
-   must name the database (prod: `tbltp`), otherwise the API uses `test`. The chart no longer has
-   an in-cluster Mongo.
+   must name the database (prod: `tbltp`, dev: `tbltp-dev` with a user limited to it), otherwise the
+   API uses `test`. The chart no longer has an in-cluster Mongo.
 9. **Storage = Cloudflare R2**, prod bucket `ntt-production`, dev `ntt-development`. The egress
    rule uses `storageS3EgressPatterns: ["**.r2.cloudflarestorage.com"]` so the account id stays
    out of Git. The endpoint secret value is the bare host (the API assumes `https://`).
@@ -164,8 +164,9 @@ Gitignored, never committed: `secrets.yaml`, `_out/`, talosconfig, kubeconfig,
    the unused GitHub environments (tbltp `Dev`; cobblepod `development` and `production`; keep tbltp
    `Prod`, it gates releases).
 5. **microk8s cleanup**: `sudo snap remove microk8s`, delete the `microk8s` kube context, the old
-   `ntt`/`nttapi.steakholdermeating.com` DNS records, the stray `tbltp-dev` database in its Mongo
-   (take a last `mongodump` first), unused environment secrets.
+   `ntt`/`nttapi.steakholdermeating.com` DNS records, the stray `tbltp-dev` database in microk8s's
+   own in-cluster Mongo (not the Atlas dev database of the same name; take a last `mongodump`
+   first), unused environment secrets.
 6. Apply the `TimeSyncConfig` to the live dev node (`create.sh` already includes it for new
    clusters; dev still uses the Cloudflare default and logs UDP timeouts, though it stays synced).
 7. cobblepod issue #69 (worker CPU and memory limits). Optional: an issue for
