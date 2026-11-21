@@ -1,0 +1,31 @@
+# Chart and settings come from tbltp (chart/values.yaml, chart/values-prod.yaml); only the version pins
+# live here (envs/prod/ntt.yaml).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ntt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/micahg/tbltp.git
+      targetRevision: main
+      path: chart
+      helm:
+        releaseName: ntt-infra
+        valueFiles:
+          - values.yaml
+          - values-prod.yaml
+          - $values/envs/prod/ntt.yaml
+    - repoURL: https://github.com/micahg/talos-cluster.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ntt
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
