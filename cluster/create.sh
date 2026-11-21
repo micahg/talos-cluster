@@ -5,6 +5,7 @@
 #
 #   ./create.sh <dev|prod>              # creates things
 #   DRY_RUN=1 ./create.sh <dev|prod>    # prints what it would do
+#   RESUME=1 ./create.sh <dev|prod>     # VM already exists: continue from the Talos wait
 #
 # It refuses to touch an existing network, domain or disk. Settings come from envs/<env>.env.
 # After it finishes, follow the "Next steps" it prints (Cilium is part of the machine config, so
@@ -34,8 +35,15 @@ done
 "${V[@]}" pool-info images >/dev/null 2>&1 || { echo "libvirt pool 'images' does not exist" >&2; exit 1; }
 POOL_DIR=$("${V[@]}" pool-dumpxml images | sed -n 's#.*<path>\(.*\)</path>.*#\1#p' | head -1)
 DISK="$POOL_DIR/$NODE_NAME.qcow2"
-if "${V[@]}" dominfo "$NODE_NAME" >/dev/null 2>&1; then echo "domain $NODE_NAME already exists" >&2; exit 1; fi
-if "${V[@]}" vol-info --pool images "$NODE_NAME.qcow2" >/dev/null 2>&1; then
+SKIP_CREATE=
+if "${V[@]}" dominfo "$NODE_NAME" >/dev/null 2>&1; then
+  if [ -n "${RESUME:-}" ]; then
+    SKIP_CREATE=1
+    echo "RESUME: $NODE_NAME exists, skipping the network, image and VM steps"
+  else
+    echo "domain $NODE_NAME already exists (RESUME=1 continues from the Talos wait)" >&2; exit 1
+  fi
+elif "${V[@]}" vol-info --pool images "$NODE_NAME.qcow2" >/dev/null 2>&1; then
   echo "volume $NODE_NAME.qcow2 already exists in pool images" >&2; exit 1
 fi
 if [ -e "$WORK/$ENV/secrets.yaml" ] && [ -z "${REUSE_SECRETS:-}" ]; then
@@ -49,6 +57,7 @@ if ! command -v helm >/dev/null; then
 fi
 echo "ok: pool images at $POOL_DIR, disk $DISK"
 
+if [ -z "$SKIP_CREATE" ]; then
 say "Network $NET_NAME"
 if "${V[@]}" net-info "$NET_NAME" >/dev/null 2>&1; then
   echo "network $NET_NAME already exists, leaving it as is"
@@ -100,14 +109,15 @@ run virt-install --connect qemu:///system --name "$NODE_NAME" \
   --import --disk "path=$DISK,bus=virtio" \
   --network "network=$NET_NAME,mac=$NODE_MAC,model=virtio" \
   --osinfo linux2022 --graphics none --noautoconsole
+fi
 
 say "Waiting for Talos maintenance API on $NODE_IP"
 if [ -z "$DRY_RUN" ]; then
   for _ in $(seq 1 60); do
-    talosctl --insecure -n "$NODE_IP" -e "$NODE_IP" version >/dev/null 2>&1 && break
+    talosctl version --insecure -n "$NODE_IP" -e "$NODE_IP" >/dev/null 2>&1 && break
     sleep 5
   done
-  talosctl --insecure -n "$NODE_IP" -e "$NODE_IP" version >/dev/null 2>&1 || { echo "node did not come up" >&2; exit 1; }
+  talosctl version --insecure -n "$NODE_IP" -e "$NODE_IP" >/dev/null 2>&1 || { echo "node did not come up" >&2; exit 1; }
 fi
 
 say "Machine config"
