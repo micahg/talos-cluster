@@ -7,3 +7,12 @@ $patch: delete
 apiVersion: v1alpha1
 kind: KubeProxyConfig
 enabled: false
+---
+# Cloudflare's NTS time servers (the Talos default) time out on UDP 123 from our NAT networks,
+# which leaves etcd waiting for time sync. Use plain NTP from Google and the pool instead.
+apiVersion: v1alpha1
+kind: TimeSyncConfig
+ntp:
+  servers:
+    - time.google.com
+    - pool.ntp.org
