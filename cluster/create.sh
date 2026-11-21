@@ -46,13 +46,21 @@ if "${V[@]}" dominfo "$NODE_NAME" >/dev/null 2>&1; then
 elif "${V[@]}" vol-info --pool images "$NODE_NAME.qcow2" >/dev/null 2>&1; then
   echo "volume $NODE_NAME.qcow2 already exists in pool images" >&2; exit 1
 fi
-if [ -e "$WORK/$ENV/secrets.yaml" ] && [ -z "${REUSE_SECRETS:-}" ]; then
+if [ -e "$WORK/$ENV/secrets.yaml" ] && [ -z "${REUSE_SECRETS:-}" ] && [ -z "${RESUME:-}" ]; then
   echo "$WORK/$ENV/secrets.yaml exists: a cluster was built here before." >&2
   echo "Set REUSE_SECRETS=1 to rebuild the same cluster identity from it, or move it away." >&2
   exit 1
 fi
+# RESUME after the config was applied: the node answers on its secured API, so do not regenerate
+# the config (that would mint new Cilium keys that the node does not have).
+CONFIGURED=
+if [ -n "${RESUME:-}" ] && [ -z "$DRY_RUN" ] && [ -f "$OUT/talosconfig" ] \
+   && talosctl version --talosconfig "$OUT/talosconfig" >/dev/null 2>&1; then
+  CONFIGURED=1
+  echo "RESUME: config already applied on $NODE_IP, skipping config generation"
+fi
 # patches/cilium.yaml holds Cilium's own private keys: render a fresh one for each cluster.
-if ! command -v helm >/dev/null; then
+if [ -z "$CONFIGURED" ] && ! command -v helm >/dev/null; then
   [ -n "$DRY_RUN" ] && echo "warning: helm is missing (needed to render Cilium)" || { echo "missing: helm (needed to render Cilium)" >&2; exit 1; }
 fi
 echo "ok: pool images at $POOL_DIR, disk $DISK"
@@ -111,6 +119,7 @@ run virt-install --connect qemu:///system --name "$NODE_NAME" \
   --osinfo linux2022 --graphics none --noautoconsole
 fi
 
+if [ -z "$CONFIGURED" ]; then
 say "Waiting for Talos maintenance API on $NODE_IP"
 if [ -z "$DRY_RUN" ]; then
   for _ in $(seq 1 60); do
@@ -119,7 +128,9 @@ if [ -z "$DRY_RUN" ]; then
   done
   talosctl version --insecure -n "$NODE_IP" -e "$NODE_IP" >/dev/null 2>&1 || { echo "node did not come up" >&2; exit 1; }
 fi
+fi
 
+if [ -z "$CONFIGURED" ]; then
 say "Machine config"
 if [ -z "$DRY_RUN" ]; then
   ./build-cilium-patch.sh
@@ -147,19 +158,33 @@ if [ -z "$DRY_RUN" ]; then
 else
   echo "+ build-cilium-patch.sh, talosctl gen secrets/config for $CLUSTER_NAME at https://$NODE_IP:6443"
 fi
+fi
 
 say "Apply, install, bootstrap"
 if [ -z "$DRY_RUN" ]; then
-  talosctl apply-config --insecure -n "$NODE_IP" -e "$NODE_IP" --file "$OUT/controlplane.yaml"
-  for _ in $(seq 1 90); do
-    talosctl --talosconfig "$OUT/talosconfig" version >/dev/null 2>&1 && break
-    sleep 10
+  TC=(--talosconfig "$OUT/talosconfig")
+  # RESUME-safe: the secured API only answers once a config has been applied
+  if talosctl version "${TC[@]}" >/dev/null 2>&1; then
+    echo "config already applied, skipping apply-config"
+  else
+    talosctl apply-config --insecure -n "$NODE_IP" -e "$NODE_IP" --file "$OUT/controlplane.yaml"
+    for _ in $(seq 1 90); do
+      talosctl version "${TC[@]}" >/dev/null 2>&1 && break
+      sleep 10
+    done
+  fi
+  # etcd waits for time sync and the CRI before it accepts a bootstrap, so retry
+  for _ in $(seq 1 60); do
+    if out=$(talosctl bootstrap "${TC[@]}" 2>&1); then echo "bootstrapped"; break; fi
+    case "$out" in
+      *"AlreadyExists"*|*"already"*) echo "already bootstrapped"; break ;;
+    esac
+    echo "waiting for etcd to accept bootstrap..."; sleep 10
   done
-  talosctl --talosconfig "$OUT/talosconfig" bootstrap
-  talosctl --talosconfig "$OUT/talosconfig" kubeconfig "$WORK/$ENV/kubeconfig" --force
+  talosctl kubeconfig "$WORK/$ENV/kubeconfig" "${TC[@]}" --force
   chmod 600 "$WORK/$ENV/kubeconfig"
 else
-  echo "+ talosctl apply-config, wait for reboot, bootstrap, kubeconfig"
+  echo "+ talosctl apply-config, wait for reboot, bootstrap (retrying), kubeconfig"
 fi
 
 cat <<NEXT
