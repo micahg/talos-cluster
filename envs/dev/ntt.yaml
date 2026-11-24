@@ -3,4 +3,4 @@
 # Argo reads this file as $values/envs/dev/ntt.yaml (see argocd/dev/apps/ntt.yaml).
 releaseVersion: "0.64.0"
 apiImageVers: "0.45.0"
-uiImageVers: "sha-bd189c0"
+uiImageVers: "sha-4322cc0"
