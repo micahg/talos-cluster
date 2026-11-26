@@ -2,5 +2,5 @@
 # a self-merging pull request here. Everything else lives in tbltp/chart/values-dev.yaml.
 # Argo reads this file as $values/envs/dev/ntt.yaml (see argocd/dev/apps/ntt.yaml).
 releaseVersion: "0.67.0"
-apiImageVers: "sha-718f4a9"
+apiImageVers: "sha-adfdad2"
 uiImageVers: "0.35.0"
