@@ -2,6 +2,6 @@
 # release is approved for prod. Everything else lives in tbltp/chart/values-prod.yaml.
 # Argo reads this file as $values/envs/prod/ntt.yaml (see argocd/prod/apps/ntt.yaml).
 # Starting point: what dev runs now. The first approved release moves it.
-releaseVersion: "0.67.0"
-apiImageVers: "0.45.0"
+releaseVersion: "0.68.0"
+apiImageVers: "0.46.0"
 uiImageVers: "0.35.0"
